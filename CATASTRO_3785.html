@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>CATASTRO OSM</title>
+<title>CATASTRO OSM</title>
 <style type="text/css">
 	#map {
 		width : 800px;
@@ -12,29 +12,28 @@
 <script src="http://openlayers.org/api/OpenLayers.js"></script>
 <script src="http://maps.google.com/maps/api/js?v=3.3&sensor=false"></script>
 <script type="text/javascript">
-	window.onload = function(){
+window.onload = function(){
 
-		var URL_WMS = "http://ovc.catastro.meh.es/Cartografia/WMS/ServidorWMS.aspx";
-		var geographic = new OpenLayers.Projection("EPSG:4326");
+	var URL_WMS = "http://ovc.catastro.meh.es/Cartografia/WMS/ServidorWMS.aspx";
+	var geographic = new OpenLayers.Projection("EPSG:4326");
         var mercator = new OpenLayers.Projection("EPSG:900913");        
         var aliasproj = new OpenLayers.Projection ("EPSG:3785");
         var layers = [];
 
-		var options = { controls: [
-		    new OpenLayers.Control.LayerSwitcher( {title: 'layers'} ),
-		    new OpenLayers.Control.PanZoomBar(),
-		    new OpenLayers.Control.NavToolbar(),
-		    new OpenLayers.Control.MousePosition()         
-		]};
+	var options = { controls: [
+	    new OpenLayers.Control.LayerSwitcher( {title: 'layers'} ),
+	    new OpenLayers.Control.PanZoomBar(),
+	    new OpenLayers.Control.NavToolbar(),
+	    new OpenLayers.Control.MousePosition()         
+	]};
 
-
-		var map = new OpenLayers.Map("map", options);
-		map.units = "m";
+	var map = new OpenLayers.Map("map", options);
+	map.units = "m";
         map.maxResolution= 156543.0339;
         map.maxExtent = new OpenLayers.Bounds(-1500000, 3950000, 520000, 5600000);
-		map.tileSize = new OpenLayers.Size(200, 200);
-		map.projection = mercator;
-		map.displayProjection = geographic;
+	map.tileSize = new OpenLayers.Size(200, 200);
+	map.projection = mercator;
+	map.displayProjection = geographic;
 
         //Agregar capas BASE
         var osm = new OpenLayers.Layer.OSM("OpenStreetMap");
@@ -42,43 +41,41 @@
         
         var capa = getLayerCATASTRO();
         capa.projection = osm.projection = gsat.projection = aliasproj;
-		layers.push(capa);
+	layers.push(capa);
         layers.push(osm);
         layers.push(gsat);
 
-		map.addLayers(layers);
-		
-		map.zoomToMaxExtent();
-		
+	map.addLayers(layers);
+	map.zoomToMaxExtent();
+	
 
-		function getLayerCATASTRO()
-		{
-			var capa = new OpenLayers.Layer.WMS(
-			'WMS Catastro',
-			URL_WMS, {
-			    layers: 'CATASTRO',
-			    srs: 'EPSG:3785',
-			    version: '1.1.1',
-			    format: 'image/png',
-			    transparent: true
-			}, {
-			    isBaseLayer: false,
-			    transparent: true,
-			    visibility: true,
-			    buffer: 0,
-			    singleTile: false,
-			    ratio: 1.5
-			});
-			
-			return capa;
-		}
-
+	function getLayerCATASTRO()
+	{
+		var capa = new OpenLayers.Layer.WMS(
+		'WMS Catastro',
+		URL_WMS, {
+		    layers: 'CATASTRO',
+		    srs: 'EPSG:3785',
+		    version: '1.1.1',
+		    format: 'image/png',
+		    transparent: true
+		}, {
+		    isBaseLayer: false,
+		    transparent: true,
+		    visibility: true,
+		    buffer: 0,
+		    singleTile: false,
+		    ratio: 1.5
+		});
+		
+		return capa;
 	}
+
+}
 </script>	
 </head>
 <body>
 <div id="map">
-	
 </div>
 </body>
 </html>
