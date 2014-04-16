@@ -1,4 +1,4 @@
- <html>
+<html>
 <head>
 <title>OpenStreetMap BBOX</title>
 <style type="text/css">
@@ -85,9 +85,12 @@ function HacerZoomMBR(id) {
         cooTopRight.transform(Arh.projOcmiETRS89, Arh.projMercator);
 
         //alert('las coordenadas transformada es:' + cooBotmLeft + ' - ' + cooTopRight);
-        var mbr = new OpenLayers.Bounds(cooBotmLeft.lon, cooBotmLeft.lat, cooTopRight.lon, cooTopRight.lat);
-
-        Arh.map.zoomToExtent(mbr);
+        Arh.currentMBR = new OpenLayers.Bounds(cooBotmLeft.lon, cooBotmLeft.lat, cooTopRight.lon, cooTopRight.lat);
+        Arh.map.zoomToExtent(Arh.currentMBR);
+    }
+    else {
+        Arh.currentMBR = null;
+        Arh.map.setCenter(Arh.centerLonLat, Arh.zoomIniMapa);
     }
 }
 
@@ -105,13 +108,15 @@ window.onload = function () {
 
     /* Configurar Mapa Personalizado */
     Arh.URL_WMS_OCMI = "http://localhost:49363/wms.ashx";
+    Arh.projWGS84 = new OpenLayers.Projection("EPSG:4326");
     Arh.projOcmiETRS89 = new OpenLayers.Projection("EPSG:4258");
     Arh.projMercator = new OpenLayers.Projection("EPSG:3785");
     Arh.bounds = new OpenLayers.Bounds(-1500000, 3950000, 520000, 5600000);
     Arh.maxResolution = 4891.9698095703125;
     Arh.resolutions = OpenLayers.Layer.Bing.prototype.serverResolutions.slice(5, 19);
     Arh.centerLonLat = new OpenLayers.LonLat(-4.0281597, 39.8567575);
-    Arh.ZoomIniMapa = 1;
+    Arh.zoomIniMapa = 1;
+    Arh.currentMBR = null;
 
     /****
     INICIALIZA MAPA
@@ -153,9 +158,9 @@ window.onload = function () {
     Arh.map.addLayers(layers);
 
     /* Posiciona Inicio del mapa*/
-    Arh.centerLonLat.transform(Arh.projOcmiETRS89, Arh.projMercator);
+    Arh.centerLonLat.transform(Arh.projWGS84, Arh.projMercator);
     if (!Arh.map.getCenter()) {
-        Arh.map.setCenter(Arh.centerLonLat, Arh.ZoomIniMapa);
+        Arh.map.setCenter(Arh.centerLonLat, Arh.zoomIniMapa);
     }
 
     /****
