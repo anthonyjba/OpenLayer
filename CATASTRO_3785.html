@@ -125,6 +125,27 @@
             return capa;
         }
 
+        function getLayerPONENCIAS() {
+            var capa = new OpenLayers.Layer.WMS(
+                'Ponencias',
+                'https://ovc.catastro.meh.es/Cartografia/WMS/PonenciasWMS.aspx', {
+                    layers: 'TODAS',
+                    srs: 'EPSG:3785',
+                    version: '1.1.1',
+                    format: 'image/png',
+                    transparent: true
+                }, {
+                    isBaseLayer: false,
+                    transparent: true,
+                    visibility: true,
+                    buffer: 0,
+                    singleTile: true,
+                    ratio: 1.5
+                });
+
+            return capa;
+        }
+
 
         function getLayerZonasValor() {
             var capa = new OpenLayers.Layer.WMS(
@@ -227,19 +248,20 @@
 
             //Overlays Layers
             var wmsCAT = getLayerCATASTRO();
-            var zonasValor = getLayerZonasValor();
+            var wmsPonencias = getLayerPONENCIAS();
+            var zonasValor = getLayerZonasValor();            
             
+            //wmsCAT.projection = 
             //Equal Projection
-            openstreetmap.projection = google_maps.projection = bing.projection = wmsCAT.projection = zonasValor.projection = Ocmi.projMercator;
+            openstreetmap.projection = google_maps.projection = bing.projection = wmsPonencias.projection = zonasValor.projection = Ocmi.projMercator;
 
             //Add Layers to map
-            map.addLayers([openstreetmap, google_maps, bing, wmsCAT, zonasValor]);
+            map.addLayers([openstreetmap, google_maps, bing, wmsPonencias, zonasValor]);
 
             //Zoom To Extent Ocmi's bounds 
             map.zoomToExtent(Ocmi.bounds);
 
-            alert(map.getProjection());
-
+           
             /* END MAP */
 
         }
