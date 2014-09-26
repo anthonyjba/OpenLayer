@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>CATASTRO OSM</title>
+<style type="text/css">
+	#visor {
+		width : 800px;
+		height : 600px;
+		border: 1px solid black;
+	}
+</style>
+<script src="http://openlayers.org/api/OpenLayers.js"></script>
+<script src="http://maps.google.com/maps/api/js?v=3.3&sensor=false"></script>
+<script type="text/javascript">
+	var map = null;
+	var proxy = "http://localhost:49363";
+	var highlightLayer;
+	
+	function getLayerARHGeo() {
+    var capa = new OpenLayers.Layer.WMS(
+			    'ARH',
+			    proxy + '/wms.ashx', {
+			        layers: 'OCMI_ARH_GEO,Labels_OCMI_ARH_GEO',
+			        service: 'wms',
+			        version: '1.3.0',
+			        format: 'image/png',
+			        transparent: true
+			    }, {
+			        isBaseLayer: false,
+			        transparent: true,
+			        visibility: false,
+			        buffer: 0,
+			        singleTile: false,
+			        ratio: 1.5
+			    });
+
+	    var options = { wmsparams: {
+	        'MAP_TYPE': 'ARH'
+	    }
+	    };
+	    capa.mergeNewParams(options.wmsparams);
+
+	    //capa.events.register('loadstart', this, showLabelsCultivos);
+	    //capa.events.register('loadend', this, onloadend);
+
+	    return capa;
+	}
+
+	function getLabelInfoARH() {
+	    var geojson_layer;    
+		var _CallBack = function(resp) {			
+		    if(resp.error) {
+		        //console.log('error');
+		        return -1;
+		    }
+		    geojson_layer.addFeatures(resp.features);
+		    //console.log('success');
+		    return 1;
+		};
+
+		var bbox = new OpenLayers.Strategy.BBOX();
+		
+		var fakeProtocol = new OpenLayers.Protocol.Script({
+	    	url: "http://wsmapa.catastrodes.age/Json.ashx",
+	    	params: {
+	                MAP_TYPE: "ARH",
+	                LAYERS: "OCMI_ARH_GEO",
+	                QUERY_LAYERS: "OCMI_ARH_GEO",
+	                ONLY_DATA: "TRUE"
+	                //,outputFormat: "text/javascript"
+	            },
+	        callback: _CallBack,
+	        filterToParams: function(filter, params) {
+	            // example to demonstrate BBOX serialization
+	            if (filter.type === OpenLayers.Filter.Spatial.BBOX) {
+	                params.bbox = filter.value.toArray();
+	                /*if (filter.projection) {
+	                    params.bbox.push(filter.projection.getCode());
+	                }*/
+	            }
+	            return params;
+	        }            
+	    });
+	    geojson_layer = new OpenLayers.Layer.Vector("Cultivos", {
+	        strategies: [bbox],
+	        protocol: fakeProtocol,
+	        isBaseLayer: false
+	    });
+
+	    return geojson_layer;
+	}
+
+	function ArhSelected(layer) {
+	    var sel = new OpenLayers.Control.WMSGetFeatureInfo({
+	        url: proxy + '/wms.ashx',
+	        title: 'Seleccionar ARH haciendo click',
+	        layers: [layer],
+	        //        drillDown: true,
+	        //        hover: true,
+	        queryVisible: true,
+	        format: new OpenLayers.Format.GeoJSON(),
+	        eventListeners: {
+	            getfeatureinfo: showInfo
+	        }
+	    });
+
+	    //Para configurar parametros con WMSGetFeatureInfo utilizaremos vendorParams
+	    sel.vendorParams = {
+	        'QUERY_LAYERS': 'OCMI_ARH_GEO',
+	        'MAP_TYPE': 'ARH',
+	        'INFO_FORMAT': 'text/json'
+	    };
+	    return sel;
+	}
+
+	function showInfo(evt) {
+	    var datosArh = new OpenLayers.Format.JSON().read(evt.text);
+	    if (evt.features && evt.features.length) {
+	        highlightLayer.destroyFeatures();
+	        highlightLayer.addFeatures(evt.features);
+	        highlightLayer.redraw();
+
+	        renderDatosARH(datosArh.features[0].properties);
+	    }
+	    //else highlightLayer.destroyFeatures();
+
+	}
+
+	function renderDatosARH(values) {
+		console.log(values);
+	}
+
+	window.onload = function(){
+
+		console.log("Inicio del Reload");
+		var URL_WMS = "http://ovc.catastro.meh.es/Cartografia/WMS/ServidorWMS.aspx";
+		var geographic = new OpenLayers.Projection("EPSG:4326");
+        var mercator = new OpenLayers.Projection("EPSG:900913");        
+        var aliasproj = new OpenLayers.Projection ("EPSG:3785");
+        var layers = [];
+
+		var options = { controls: [
+		    new OpenLayers.Control.LayerSwitcher( {title: 'layers'} ),
+		    new OpenLayers.Control.PanZoomBar(),
+		    new OpenLayers.Control.MousePosition()         
+		]};
+
+		map = new OpenLayers.Map("visor", options);
+		map.units = "m";
+        map.maxResolution= 156543.0339;
+        map.maxExtent = new OpenLayers.Bounds(-1500000, 3950000, 520000, 5600000);
+		map.tileSize = new OpenLayers.Size(200, 200);
+		map.projection = mercator;
+		map.displayProjection = geographic;
+
+        //Agregar capas BASE
+        var osm = new OpenLayers.Layer.OSM("OpenStreetMap");
+        /*var gsat = new OpenLayers.Layer.Google("Google SATELITE",{type: google.maps.MapTypeId.SATELLITE, 'sphericalMercator': true, minZoomLevel: 4 });*/
+
+        //Capas extras
+        var capa = getLayerCATASTRO();
+        var wmsARH = getLayerARHGeo();
+        var vJson = getLabelInfoARH();        
+
+		highlightLayer = new OpenLayers.Layer.Vector("Highlighted Features", {
+	        displayInLayerSwitcher: false,
+	        isBaseLayer: false
+	    });
+
+        capa.projection = osm.projection = wmsARH.projection = vJson.projection = aliasproj;
+		layers.push(capa);
+        layers.push(osm);
+        layers.push(wmsARH);
+        layers.push(vJson);
+        layers.push(highlightLayer);
+
+        //Asigna Controles
+	    var CtrlSelect = ArhSelected(wmsARH);
+	    map.addControl(CtrlSelect);
+	    CtrlSelect.activate();
+
+	    var toolbar = OpenLayers.Class(OpenLayers.Control.NavToolbar, {
+	        initialize: function () {
+	            OpenLayers.Control.NavToolbar.prototype.initialize.apply(this, [""]);
+	            this.addControls([CtrlSelect]);
+	        }
+	    });
+	    map.addControl(new toolbar());
+
+		
+
+		map.addLayers(layers);
+		map.zoomToExtent(map.maxExtent);
+
+		function getLayerCATASTRO()
+		{
+			var capa = new OpenLayers.Layer.WMS(
+			'WMS Catastro',
+			URL_WMS, {
+			    layers: 'CATASTRO',
+			    srs: 'EPSG:3785',
+			    version: '1.1.1',
+			    format: 'image/png',
+			    transparent: true
+			}, {
+			    isBaseLayer: false,
+			    transparent: true,
+			    visibility: true,
+			    buffer: 0,
+			    singleTile: false,
+			    ratio: 1.5
+			});
+			
+			return capa;
+		}
+
+	}
+</script>	
+</head>
+<body>
+	<div id="visor">	
+	</div>
+</body>
+</html>
